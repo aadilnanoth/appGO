@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	config.LoadEnv()
 	config.InitDB()
 	r := gin.Default()
 	route.SetupRoutes(r)

@@ -10,6 +10,7 @@ import (
 )
 
 type SignupRequest struct {
+	Name  string`json:"name"`
 	Email           string `json:"email"`
 	Password        string `json:"password"`
 	ConfirmPassword string `json:"confirm_password"`
@@ -50,7 +51,7 @@ func SignupController(c *gin.Context) {
 	}
 
 	// Insert user
-	_, err = config.DB.Exec("INSERT INTO users (email, password) VALUES ($1, $2)", req.Email, string(hashedPassword))
+	_, err = config.DB.Exec("INSERT INTO users (name,email, password) VALUES ($1, $2,$3)", req.Email, string(hashedPassword))
 	if err != nil {
 		log.Println("❌ Insert error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating user"})

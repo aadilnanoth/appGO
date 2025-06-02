@@ -3,7 +3,7 @@ package controller
 import (
 	"appGO/config"
 	"appGO/model"
-
+	"appGO/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +23,7 @@ func LoginController(c *gin.Context) {
 	}
 
 	var user model.User
+	
 	err := config.DB.QueryRow("SELECT id, email, password FROM users WHERE email=$1", req.Email).
 		Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
@@ -35,5 +36,11 @@ func LoginController(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Login successful"})
+token, err := utils.GenerateJWT(user.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token})
 }
