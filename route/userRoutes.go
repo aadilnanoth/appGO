@@ -2,6 +2,7 @@ package route
 
 import (
 	"appGO/controller"
+	"appGO/middleware"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -18,5 +19,14 @@ func SetupRoutes(router *gin.Engine) {
 	{
 		userRoutes.POST("/signup", controller.SignupController)
 		userRoutes.POST("/login", controller.LoginController)
+
 	}
+
+	protected := router.Group("/user")
+protected.Use(middleware.AuthMiddleware())
+ {
+    protected.GET("/home", controller.Home)
+    protected.GET("/profile", controller.UserProfile)
+}
+
 }
