@@ -7,6 +7,6 @@ import (
 )
 
 func Home(c *gin.Context) {
-	email := c.MustGet("userEmail").(string) // Extracted from JWT by middleware
+	email := c.MustGet("userEmail").(string) 
 	c.JSON(http.StatusOK, gin.H{"message": "Welcome " + email})
 }
