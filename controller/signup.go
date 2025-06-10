@@ -2,6 +2,7 @@ package controller
 
 import (
 	"appGO/config"
+	"appGO/utils"
 	"log"
 	"net/http"
 
@@ -13,7 +14,6 @@ type SignupRequest struct {
 	Name  string`json:"name"`
 	Email           string `json:"email"`
 	Password        string `json:"password"`
-	ConfirmPassword string `json:"confirm_password"`
 }
 
 func SignupController(c *gin.Context) {
@@ -23,9 +23,8 @@ func SignupController(c *gin.Context) {
 		return
 	}
 
-	// Check if passwords match
-	if req.Password != req.ConfirmPassword {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Passwords do not match"})
+	if req.Name == "" || req.Email == "" || req.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
 		return
 	}
 
@@ -51,12 +50,23 @@ func SignupController(c *gin.Context) {
 	}
 
 	// Insert user
-	_, err = config.DB.Exec("INSERT INTO users (name,email, password) VALUES ($1, $2,$3)", req.Email, string(hashedPassword))
+_, err = config.DB.Exec("INSERT INTO users (name, email, password) VALUES ($1, $2, $3)",
+	req.Name, req.Email, string(hashedPassword))
 	if err != nil {
 		log.Println("❌ Insert error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating user"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "User registered successfully"})
+token, err :=utils.GenerateJWT(req.Email)
+	if err != nil {
+		log.Println("❌ Token generation error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating token"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "User registered successfully",
+		"token":   token,
+	})
 }
