@@ -14,12 +14,14 @@ var JwtKey = []byte(os.Getenv("JWT_SECRET"))
 
 type Claims struct{
 	Email string `json:"email"`
+	Role string`json:"role"`
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(email string)(string,error){
+func GenerateJWT(email,role string)(string,error){
 	claims :=&Claims{
 		Email:email,
+		Role:role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24*time.Hour)),
 		},

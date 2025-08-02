@@ -1,37 +1,51 @@
 package config
 
 import (
-	"database/sql"
+	"appGO/model"
 	"log"
 	"os"
 
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var DB *sql.DB
-
-func InitDB() {
-	var err error
-DB, err = sql.Open("postgres", "host=localhost port=5432 user=farhanyousuf dbname=goapp sslmode=disable")
-	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
-	}
-
-	if err = DB.Ping(); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
-	}
-
-	log.Println("Connected to database")
-}
-
+var DB *gorm.DB
 var JwtKey []byte
 
 func LoadEnv() {
-	err := godotenv.Load()
+	err := godotenv.Load()             
 	if err != nil {
 		log.Fatal("❌ Error loading .env file")
 	}
 
 	JwtKey = []byte(os.Getenv("JWT_SECRET"))
+}
+
+func InitDB() {
+	dsn := "host=localhost port=5432 user=farhanyousuf dbname=goapp sslmode=disable"
+	var err error
+
+	
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	
+
+	log.Println("✅ Connected to database using GORM")
+
+
+    // Auto migrate multiple models
+    err = DB.AutoMigrate(
+        &model.User{},
+        &model.Category{},
+        &model.Item{},
+        // &model.Order{},
+        // // Add more models here as needed
+    )
+    if err != nil {
+        log.Fatalf("AutoMigrate failed: %v", err)
+    }
 }

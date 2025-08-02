@@ -23,11 +23,14 @@ func LoginController(c *gin.Context) {
 	}
 
 	var user model.User
-	
-	err := config.DB.QueryRow("SELECT id, email, password FROM users WHERE email=$1", req.Email).
-		Scan(&user.ID, &user.Email, &user.Password)
-	if err != nil {
+	if err := config.DB.Where("email=?",req.Email).First(&user).Error;
+	 err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
+	}
+		// check if verified
+	if !user.IsVerified {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Please verify your account via OTP before logging in"})
 		return
 	}
 
@@ -36,11 +39,14 @@ func LoginController(c *gin.Context) {
 		return
 	}
 
-token, err := utils.GenerateJWT(user.Email)
+token, err := utils.GenerateJWT(user.Email,user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+		"role":  user.Role,
+		"name":  user.Name,
+	})
 }
