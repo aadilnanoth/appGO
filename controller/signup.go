@@ -2,6 +2,7 @@ package controller
 
 import (
 	"appGO/config"
+	"appGO/model"
 	"appGO/utils"
 	"log"
 	"net/http"
@@ -11,9 +12,9 @@ import (
 )
 
 type SignupRequest struct {
-	Name  string`json:"name"`
-	Email           string `json:"email"`
-	Password        string `json:"password"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func SignupController(c *gin.Context) {
@@ -28,20 +29,17 @@ func SignupController(c *gin.Context) {
 		return
 	}
 
-	// Check if user already exists
-	var exists bool
-	err := config.DB.QueryRow("SELECT EXISTS (SELECT 1 FROM users WHERE email=$1)", req.Email).Scan(&exists)
-	if err != nil {
-		log.Println("❌ QueryRow error:", err)
+	var count int64
+	if err := config.DB.Model(&model.User{}).Where("email = ?", req.Email).Count(&count).Error; err != nil {
+		log.Println("❌ DB error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
-	if exists {
+	if count > 0 {
 		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
 		return
 	}
 
-	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Println("❌ Password hashing error:", err)
@@ -49,24 +47,28 @@ func SignupController(c *gin.Context) {
 		return
 	}
 
-	// Insert user
-_, err = config.DB.Exec("INSERT INTO users (name, email, password) VALUES ($1, $2, $3)",
-	req.Name, req.Email, string(hashedPassword))
-	if err != nil {
+	otp := utils.GenerateOTP(6)
+
+	user := model.User{
+		Name:       req.Name,
+		Email:      req.Email,
+		Password:   string(hashedPassword),
+		OTP:        otp,
+		IsVerified: false,
+		Role:       "user", // 👈 Default role is set here
+	}
+
+	if err := config.DB.Create(&user).Error; err != nil {
 		log.Println("❌ Insert error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating user"})
 		return
 	}
 
-token, err :=utils.GenerateJWT(req.Email)
-	if err != nil {
-		log.Println("❌ Token generation error:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating token"})
+	if err := utils.SendEmail(req.Email, "OTP Verification", "Your OTP is: "+otp); err != nil {
+		log.Println("❌ Email sending error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send OTP email"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "User registered successfully",
-		"token":   token,
-	})
+	c.JSON(http.StatusCreated, gin.H{"message": "User created successfully. Please verify OTP sent to your email."})
 }
