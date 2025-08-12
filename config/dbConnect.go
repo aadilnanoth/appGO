@@ -42,7 +42,11 @@ func InitDB() {
         &model.User{},
         &model.Category{},
         &model.Item{},
-        // &model.Order{},
+        &model.Cart{},
+		&model.CartItem{},
+		&model.Wishlist{},
+		&model.WishlistItem{},
+
         // // Add more models here as needed
     )
     if err != nil {

@@ -31,22 +31,22 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		var user struct {
+			ID         uint
 			IsVerified bool
-			Role string
+			Role       string
 		}
 
-		
-err = config.DB.Model(&model.User{}).
-			Select("is_verified", "role").
+		err = config.DB.Model(&model.User{}).
+			Select("id", "is_verified", "role").
 			Where("email = ?", claims.Email).
 			Scan(&user).Error
+
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 				c.Abort()
 				return
 			}
-
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 			c.Abort()
 			return
@@ -58,18 +58,23 @@ err = config.DB.Model(&model.User{}).
 			return
 		}
 
+		// Set user data in context for handlers to access
+		c.Set("userID", user.ID)
 		c.Set("userEmail", claims.Email)
 		c.Set("Role", user.Role)
-		fmt.Println("Token Received:", tokenStr)
-		fmt.Println("Claims:", claims)
+
+		fmt.Printf("Token Received: %s\n", tokenStr)
+		fmt.Printf("Claims: %+v\n", claims)
 
 		c.Next()
 	}
 }
+
 func AdminOnly() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		role, exists := c.Get("Role")
-		if !exists || role != "admin" {
+		roleVal, exists := c.Get("Role")
+		role, ok := roleVal.(string)
+		if !exists || !ok || role != "admin" {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Admin access only"})
 			c.Abort()
 			return
@@ -78,11 +83,11 @@ func AdminOnly() gin.HandlerFunc {
 	}
 }
 
-// Middleware to allow only normal Users
 func UserOnly() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		role, exists := c.Get("Role")
-		if !exists || role != "user" {
+		roleVal, exists := c.Get("Role")
+		role, ok := roleVal.(string)
+		if !exists || !ok || role != "user" {
 			c.JSON(http.StatusForbidden, gin.H{"error": "User access only"})
 			c.Abort()
 			return

@@ -12,9 +12,10 @@ type Cart struct {
 }
 
 type CartItem struct {
-	ID      uint `gorm:"primaryKey"`
-	CartID  uint
-	ItemID  uint
-	Quantity int
-	Item    Item
+    ID       uint `gorm:"primaryKey"`
+    CartID   uint
+    Cart     Cart `gorm:"foreignKey:CartID"`
+    ItemID   uint
+    Quantity int
+    Item     Item
 }
