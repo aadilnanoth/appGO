@@ -46,6 +46,9 @@ func InitDB() {
 		&model.CartItem{},
 		&model.Wishlist{},
 		&model.WishlistItem{},
+		&model.Order{},
+		&model.OrderItem{},
+
 
         // // Add more models here as needed
     )

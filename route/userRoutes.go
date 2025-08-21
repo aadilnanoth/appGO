@@ -35,6 +35,9 @@ func SetupRoutes(r *gin.Engine) {
 		protected.GET("/whishlist", controller.GetWishlist)
 		protected.DELETE("/cart/:id", controller.RemoveCartItem)
 		protected.DELETE("/whishlist/:id", controller.RemoveFromWishlist)
+		protected.POST("/checkout", controller.CheckoutHandler)
+	    protected.GET("/orders", controller.GetOrdersHandler)
+
 	}
 
 	
